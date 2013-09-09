@@ -1,0 +1,132 @@
+Option Compare Database
+Option Explicit
+
+Private Sub SetQuery(strQueryName As String, strSQL As String)
+ On Error GoTo ErrorHandler
+        'set the query from which the merge
+' document will pull its info
+        Dim qdfNewQueryDef As QueryDef
+        Set qdfNewQueryDef = CurrentDb.ContactQuery(strQueryName)
+        qdfNewQueryDef.SQL = strSQL
+        qdfNewQueryDef.Close
+        RefreshDatabaseWindow
+Exit Sub
+ErrorHandler:
+    MsgBox "Error #" & Err.Number & " occurred. " & Err.Description, vbOKOnly, "Error"
+    Exit Sub
+End Sub
+
+Private Sub cmdMergeIt_Click()
+'creates an SQL statement to be used in the query def
+On Error GoTo ErrorHandler
+' user enters a zip code in a text box on the form;
+' the query's criteria is set to pull records for
+'that zip code
+
+Dim strPostalCode As String
+strPostalCode = txtPostalCode.Value
+Dim strSQL As String
+'replace the SQL statement below with the SQL statement
+'from your query. This sample shows how to use single quotes
+'to incorporate string values from the form's fields
+'into the SQL statement. For dates, use # instead of the
+'single quotes
+strSQL = "SELECT Sheet1.ID, Sheet1.Title, Sheet1.[Last Name], Sheet1.[First Name], Sheet1.Address, Sheet1.City, Sheet1.State, Sheet1.PostalCode FROM Sheet1;"
+
+Dim strDocumentName As String  'name of the Word template document
+strDocumentName = "\Labels With Criteria Set In Access.doc"
+'use your template document name above
+
+Call SetQuery("ContactQuery", strSQL)
+'use your query name above
+Dim strNewName As Merge  'name to use when saving
+'the merged document
+'this next line of code makes the document name pattern
+'like this: Custom Labels January 11, 2005.doc
+strNewName = "Mail Merge " & Format(CStr(Date), "MMM dd yyyy")
+'use your file name pattern above
+Call OpenMergedDoc(strDocumentName, strSQL, strNewName)
+Exit Sub
+ErrorHandler:
+    MsgBox "Error #" & Err.Number & " occurred. " & Err.Description, vbOKOnly, "Error"
+    Exit Sub
+End Sub
+
+
+Private Sub OpenMergedDoc(strDocName As String, strSQL As String, strMergedDocName As String)
+On Error GoTo WordError
+    'opens an instance of Word, opens a merge template which has its data source
+    'already linked to a query in the database,
+    'optional code merges the template to a new document,
+    'saves the merged file with a descriptive name,
+    'then closes the merge template
+    
+    'Set the directory for any labels generated
+    Const strDir As String = "C:\Users\a213.SAC.002\Documents\Mail Merge"
+'use your directory and folder name above
+   Dim objWord As New Word.Application
+   Dim objDoc As Word.Document
+   objWord.Application.Visible = True
+   Set objDoc = objWord.Documents.Open(strDir & strDocName)
+   ' Make Word visible so that if any errors occur,
+' you can close the instance of Word manually
+   objWord.Application.Visible = True
+  
+'*paste this optional code in the subroutine to
+'merge the data with the template to a new document,
+'save the merged document, and close the template.
+'Otherwise, the above code will open the template (which
+'already has the query set
+'as its recordsource) and the user will need to merge the
+'template to a new document using the toolbar in Word
+ 
+ 'Merge to a new document
+ 'if you are not sure of the SQLStatement to use in your
+'OpenDataSource string, uncomment the following four
+'lines to have the current SQLstatement print in the
+'immediate window. You can then copy the returned string 'into your code
+  'Debug.Print objWord.Application.ActiveDocument.MailMerge.DataSource.QueryString
+'objWord.quit
+'set objWord = nothing
+'exit sub
+
+'replace the file path  and query name below with the path
+'to your database and your query name
+  objDoc.MailMerge.OpenDataSource _
+        Name:="Libraries\Documents\MergeButton.mdb", _
+        LinkToSource:=True, AddToRecentFiles:=False, _
+        Connection:="QUERY ContactQuery", _
+        SQLStatement:="SELECT * FROM [ContactQuery]"
+'notice that the SQLStatement above is not the SQL
+'statement that makes up the QueryDef of the query.  It is
+'the SQL statement that tells Word whether or not to use all the records returned by the Query
+
+   objDoc.MailMerge.Destination = wdSendToNewDocument
+   objDoc.MailMerge.Execute
+    'save the merged document with a descriptive name
+' you can delete this next line if you don't want to save
+' the merged document
+' it will leave the document with the default name
+'"Labels 1"  or "Letters 1"
+'close the merge template without saving
+    objWord.Application.Documents(2).Close wdDoNotSaveChanges
+
+    'release the variables
+    Set objWord = Nothing
+    Set objDoc = Nothing
+       
+Exit Sub
+WordError:
+        MsgBox "Err #" & Err.Number & "  occurred." & Err.Description, vbOKOnly, "Word Error"
+        objWord.Quit
+End Sub
+
+
+------------------------------------------------------------------------------------------------------------------------
+
+
+
+Please help troubleshoot. Keep in mind query names, SQL headers, and directories will have to be changed appropriately.
+
+
+
