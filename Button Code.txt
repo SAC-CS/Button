@@ -1,6 +1,6 @@
 Option Compare Database
 Option Explicit
-
+' ----------------------------- I will need to see your MS Access DB ---
 Private Sub SetQuery(strQueryName As String, strSQL As String)
  On Error GoTo ErrorHandler
         'set the query from which the merge
